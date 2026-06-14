@@ -1,0 +1,4 @@
+sprint 1 : 
+*FrontControllerServlet
+doget() et dopost() miantso : processrequest
+=> out.print(URL)
