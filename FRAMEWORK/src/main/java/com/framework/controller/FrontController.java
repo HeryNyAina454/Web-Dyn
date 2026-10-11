@@ -36,6 +36,9 @@ public class FrontController extends HttpServlet {
             return;
         }
 
+        // Décode correctement les accents des formulaires POST (avant tout getParameter)
+        request.setCharacterEncoding("UTF-8");
+
         String path = request.getPathInfo();
         if (path == null) {
             path = request.getServletPath();
