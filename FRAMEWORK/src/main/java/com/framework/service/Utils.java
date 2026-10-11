@@ -12,7 +12,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.util.*;
 import java.util.jar.JarEntry;
@@ -161,5 +163,72 @@ public class Utils {
 
         }
     }
-}
 
+    public static Object[] construireArguments(Method method, HttpServletRequest request) throws Exception {
+        Parameter[] parametres = method.getParameters();
+        Object[] arguments = new Object[parametres.length];
+
+        for (int i = 0; i < parametres.length; i++) {
+            Parameter p = parametres[i];
+            Class<?> type = p.getType();
+
+            if (estTypeSimple(type)) {
+                String valeur = request.getParameter(p.getName());
+                arguments[i] = convertir(valeur, type);
+            } else {
+                arguments[i] = construireObjet(type, request);
+            }
+        }
+        return arguments;
+    }
+
+    private static boolean estTypeSimple(Class<?> type) {
+        return type == String.class
+                || type == int.class || type == Integer.class
+                || type == long.class || type == Long.class
+                || type == double.class || type == Double.class
+                || type == float.class || type == Float.class
+                || type == boolean.class || type == Boolean.class;
+    }
+
+    private static Object convertir(String valeur, Class<?> type) {
+        if (valeur == null || valeur.isBlank()) {
+            if (type == int.class)
+                return 0;
+            if (type == long.class)
+                return 0L;
+            if (type == double.class)
+                return 0.0;
+            if (type == float.class)
+                return 0f;
+            if (type == boolean.class)
+                return false;
+            return null;
+        }
+        if (type == String.class)
+            return valeur;
+        if (type == int.class || type == Integer.class)
+            return Integer.parseInt(valeur);
+        if (type == long.class || type == Long.class)
+            return Long.parseLong(valeur);
+        if (type == double.class || type == Double.class)
+            return Double.parseDouble(valeur);
+        if (type == float.class || type == Float.class)
+            return Float.parseFloat(valeur);
+        if (type == boolean.class || type == Boolean.class)
+            return Boolean.parseBoolean(valeur);
+        return valeur;
+    }
+
+    private static Object construireObjet(Class<?> type, HttpServletRequest request) throws Exception {
+        Object instance = type.getDeclaredConstructor().newInstance();
+        for (Field field : type.getDeclaredFields()) {
+            String valeur = request.getParameter(field.getName());
+            if (valeur != null) {
+                field.setAccessible(true);
+                field.set(instance, convertir(valeur, field.getType()));
+            }
+        }
+        return instance;
+    }
+}
