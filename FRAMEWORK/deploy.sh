@@ -15,7 +15,7 @@ mkdir -p "$BUILD_DIR"
 
 # Compilation
 echo "Compiling Java files..."
-javac -cp "$SERVLET_API_JAR" -d "$BUILD_DIR" $(find "$SRC_DIR" -name "*.java")
+javac -parameters -cp "$SERVLET_API_JAR" -d "$BUILD_DIR" $(find "$SRC_DIR" -name "*.java")
 
 if [ $? -ne 0 ]; then
     echo "ERREUR : Compilation échouée."

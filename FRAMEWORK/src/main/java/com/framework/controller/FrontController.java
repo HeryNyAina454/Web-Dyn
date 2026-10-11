@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,9 +53,9 @@ public class FrontController extends HttpServlet {
                                 .getDeclaredConstructor()
                                 .newInstance();
 
-                Object retour =
-                        urlMapping.getMethod()
-                                .invoke(controller);
+                Method method = urlMapping.getMethod();
+                Object[] args = Utils.construireArguments(method, request);
+                Object retour = method.invoke(controller, args);
 
                 Utils.redirigerRequete(retour, viewPath, request, response);
 
