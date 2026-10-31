@@ -7,6 +7,7 @@ import com.framework.service.ViewPath;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +18,12 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+// Active la lecture des formulaires multipart/form-data (upload de fichiers)
+@MultipartConfig(
+        fileSizeThreshold = 1024 * 1024,      // au-delà de 1 Mo, le fichier est bufferisé sur disque
+        maxFileSize = 10 * 1024 * 1024,       // 10 Mo max par fichier
+        maxRequestSize = 20 * 1024 * 1024     // 20 Mo max par requête
+)
 public class FrontController extends HttpServlet {
     private Map<UrlMethod, UrlMapping> mappings;
     private ViewPath viewPath;
@@ -57,8 +64,12 @@ public class FrontController extends HttpServlet {
                                 .newInstance();
 
                 Method method = urlMapping.getMethod();
+
                 Object[] args = Utils.construireArguments(method, request);
                 Object retour = method.invoke(controller, args);
+
+                // Recopie les changements des MapSession dans la vraie session (avant le forward vers la vue)
+                Utils.synchroniserSession(request, args);
 
                 Utils.redirigerRequete(retour, viewPath, request, response);
 
