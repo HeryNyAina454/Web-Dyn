@@ -2,6 +2,7 @@ package com.framework.controller;
 
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
+import com.framework.service.AuthUtil;
 import com.framework.service.Utils;
 import com.framework.service.ViewPath;
 import jakarta.servlet.DispatcherType;
@@ -64,6 +65,13 @@ public class FrontController extends HttpServlet {
                                 .newInstance();
 
                 Method method = urlMapping.getMethod();
+
+                // @Auth : 401 si non connecté, 403 si le rôle n'est pas autorisé
+                int statutAuth = AuthUtil.verifier(request, urlMapping.getClazz(), method);
+                if (statutAuth != AuthUtil.AUTORISE) {
+                    response.sendError(statutAuth);
+                    return;
+                }
 
                 Object[] args = Utils.construireArguments(method, request);
                 Object retour = method.invoke(controller, args);
