@@ -5,11 +5,13 @@ import com.framework.annotation.FrontMapping;
 import com.framework.annotation.ObjectArg;
 import com.framework.annotation.Url;
 import com.framework.model.MapFile;
+import com.framework.model.MapSession;
 import com.framework.model.UrlMapping;
 import com.framework.model.UrlMethod;
 import com.framework.model.VueData;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -190,7 +192,9 @@ public class Utils {
             Parameter p = parametres[i];
             Class<?> type = p.getType();
 
-            if (type == MapFile.class) {
+            if (type == MapSession.class) {
+                arguments[i] = creerMapSession(request);
+            } else if (type == MapFile.class) {
                 arguments[i] = lireMapFile(request, p.getName());
             } else if (type == MapFile[].class) {
                 arguments[i] = lireMapFiles(request, p.getName());
@@ -428,5 +432,46 @@ public class Utils {
         Files.createDirectories(repertoire);
         Files.write(repertoire.resolve(nomFinal), fichier.getData());
         return nomFinal;
+    }
+
+    // =====================================================================
+    //  Session (MapSession)
+    // =====================================================================
+
+    /** Crée une MapSession contenant une copie des attributs de la session HTTP. */
+    private static MapSession creerMapSession(HttpServletRequest request) {
+        MapSession mapSession = new MapSession();
+        HttpSession session = request.getSession();
+        for (String nom : Collections.list(session.getAttributeNames())) {
+            mapSession.add(nom, session.getAttribute(nom));
+        }
+        return mapSession;
+    }
+
+    /** À appeler après l'appel de la méthode : recopie les changements des MapSession dans la session. */
+    public static void synchroniserSession(HttpServletRequest request, Object[] arguments) {
+        for (Object argument : arguments) {
+            if (argument instanceof MapSession) {
+                synchroniserSession(request, (MapSession) argument);
+            }
+        }
+    }
+
+    public static void synchroniserSession(HttpServletRequest request, MapSession mapSession) {
+        HttpSession session = request.getSession();
+
+        if (mapSession.isInvalide()) {
+            session.invalidate();
+            return;
+        }
+
+        for (String nom : Collections.list(session.getAttributeNames())) {
+            if (!mapSession.getAttributes().containsKey(nom)) {
+                session.removeAttribute(nom);
+            }
+        }
+        for (Map.Entry<String, Object> entree : mapSession.getAttributes().entrySet()) {
+            session.setAttribute(entree.getKey(), entree.getValue());
+        }
     }
 }

@@ -68,6 +68,9 @@ public class FrontController extends HttpServlet {
                 Object[] args = Utils.construireArguments(method, request);
                 Object retour = method.invoke(controller, args);
 
+                // Recopie les changements des MapSession dans la vraie session (avant le forward vers la vue)
+                Utils.synchroniserSession(request, args);
+
                 Utils.redirigerRequete(retour, viewPath, request, response);
 
             } catch (Exception e) {
